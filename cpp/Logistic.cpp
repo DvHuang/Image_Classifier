@@ -3,6 +3,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/ml.hpp>
 #include <opencv2/highgui.hpp>
+#include <strstream>
 
 using namespace std;
 using namespace cv;
@@ -72,7 +73,9 @@ void  Logistic_Train(vector <vector <double> > m,vector <double> a )
         }
     }
 
-    //normalize
+    //
+    //normalize the dataset,but through experimental verification ,
+    //this operation has no help for the accuracy.
     //normalize(M,M,1.0,0.0,NORM_MINMAX);
     //cout<<"normalize"<<M;
 
@@ -85,37 +88,160 @@ void  Logistic_Train(vector <vector <double> > m,vector <double> a )
 
     }
 
-    cout << "training...";
+    cout << "training..."<<endl;
     //! [init]
-    Ptr<LogisticRegression> lr1 = LogisticRegression::create();
-    lr1->setLearningRate(0.00000000001);
-    lr1->setIterations(1000);
-    lr1->setRegularization(LogisticRegression::REG_L2);
-    lr1->setTrainMethod(LogisticRegression::BATCH);
-    lr1->setMiniBatchSize(1);
-    //! [init]
-    //cout << feature_class.t() << endl;
-    lr1->train(M, ROW_SAMPLE, feature_class);
-    cout << "done!" << endl;
 
-    cout << "predicting...";
-    Mat responses;
-    lr1->predict(M, responses);
-    cout << "done!" << endl;
 
-    // show prediction report
-    cout << "original vs predicted:" << endl;
-    feature_class.convertTo(feature_class, CV_32S);
-    cout << feature_class.t() << endl;
-    cout << responses.t() << endl;
-    cout << "accuracy: " << calculateAccuracyPercent(feature_class, responses) << "%" << endl;
+    int rate_number=1;//-11 -10 -9 -8
+    int iterations_number=1;  //10 100 1000 10000
+    string mode_name_half="LR_Trained.xml";
+    float accuracy_array[16] ;
+    int accuracy_array_number=0;
+    for (;rate_number<5;rate_number++){
 
-    //!F1 undone~~~~
-    //cout<<"F1 Score:"<<single_Precision_Recall(feature_class,responses,1)<<"%"<<endl;
-    // save the classfier
-    const String saveFilename = "NewLR_Trained.xml";
-    cout << "saving the classifier to " << saveFilename << endl;
-    lr1->save(saveFilename);
+        float learningRate=pow(10,-16+rate_number);
+
+        for (;iterations_number<5;iterations_number++){
+
+            int Iterations=pow(10,1+iterations_number);
+
+
+            if (accuracy_array_number!=0){
+            feature_class.convertTo(feature_class, CV_32F);
+            }
+            Ptr<LogisticRegression> lr1 = LogisticRegression::create();
+            lr1->setLearningRate(learningRate);
+            lr1->setIterations(Iterations);
+            lr1->setRegularization(LogisticRegression::REG_L2);
+            lr1->setTrainMethod(LogisticRegression::BATCH);
+            lr1->setMiniBatchSize(1);
+            //lr1->setTermCriteria(TermCriteria(TermCriteria::COUNT+TermCriteria::EPS,1000,0.01));
+            //lr1->setTermCriteria(TermCriteria(TermCriteria::EPS,1,1000000000.0000000001));
+
+            //! [init]
+            //cout << feature_class.t() << endl;
+            lr1->train(M, ROW_SAMPLE, feature_class);
+
+            //cout << "done!" << endl;
+
+            //cout << "predicting...";
+            Mat responses;
+            lr1->predict(M, responses);
+            //cout << "done!" << endl;
+
+            // show prediction report
+            //cout << "original vs predicted:" << endl;
+            feature_class.convertTo(feature_class, CV_32S);
+            //cout << feature_class.t() << endl;
+            //cout << responses.t() << endl;
+            cout << "accuracy: " << calculateAccuracyPercent(feature_class, responses) << "%" << endl;
+
+            accuracy_array[accuracy_array_number]=calculateAccuracyPercent(feature_class, responses) ;
+            accuracy_array_number+=1;
+            cout<<"rate_number:"<<rate_number<<endl;
+            cout<<"iterations_number:"<<iterations_number<<endl;
+            cout<<"accruacy_array number:"<<accuracy_array_number<<endl;
+
+
+
+
+
+            strstream ss;
+            string s;
+            ss<<accuracy_array_number;
+            ss>>s;
+            string mode_name=s+mode_name_half;
+            lr1->save(mode_name.c_str());
+
+
+            //break;
+
+
+            //!F1 undone~~~~
+            //cout<<"F1 Score:"<<single_Precision_Recall(feature_class,responses,1)<<"%"<<endl;
+            // save the classfier
+
+
+//            const String saveFilename = "NewLR_Trained.xml";
+//            cout << "saving the classifier to " << saveFilename << endl;
+//            lr1->save(saveFilename);
+
+            }
+            iterations_number=1;
+
+    }
+
+
+
+//    Ptr<LogisticRegression> lr1 = LogisticRegression::create();
+//    lr1->setLearningRate(learningRate);
+//    lr1->setIterations(Iterations);
+//    lr1->setRegularization(LogisticRegression::REG_L2);
+//    lr1->setTrainMethod(LogisticRegression::BATCH);
+//    //lr1->setMiniBatchSize(1);
+//    //lr1->setTermCriteria(TermCriteria(TermCriteria::COUNT+TermCriteria::EPS,1000,0.01));
+//    //lr1->setTermCriteria(TermCriteria(TermCriteria::EPS,1,1000000000.0000000001));
+//
+//    //! [init]
+//    //cout << feature_class.t() << endl;
+//    lr1->train(M, ROW_SAMPLE, feature_class);
+//    cout << "done!" << endl;
+//
+//    cout << "predicting...";
+//    Mat responses;
+//    lr1->predict(M, responses);
+//    cout << "done!" << endl;
+//
+//    // show prediction report
+//    cout << "original vs predicted:" << endl;
+//    feature_class.convertTo(feature_class, CV_32S);
+//    cout << feature_class.t() << endl;
+//    cout << responses.t() << endl;
+//    cout << "accuracy: " << calculateAccuracyPercent(feature_class, responses) << "%" << endl;
+//
+//    //!F1 undone~~~~
+//    //cout<<"F1 Score:"<<single_Precision_Recall(feature_class,responses,1)<<"%"<<endl;
+//    // save the classfier
+//    const String saveFilename = "NewLR_Trained.xml";
+//    cout << "saving the classifier to " << saveFilename << endl;
+//    lr1->save(saveFilename);
+
+      //get max accuracy
+        cout<<"accuracy_array"<<accuracy_array<<endl;
+        int max_i=0;
+        int location_number=1;
+        for(max_i=0;max_i<sizeof(accuracy_array)/sizeof(accuracy_array[0]);max_i++){
+
+            cout<<"[0]"<<accuracy_array[0]<<endl;
+
+            cout<<"accuracy_array"<<"["<<max_i<<"]"<<accuracy_array[max_i]<<endl;
+
+            if (accuracy_array[0]<accuracy_array[max_i]){
+                accuracy_array[0]=accuracy_array[max_i];
+
+                location_number=max_i;
+                cout<<"[0]<"<<"["<<max_i<<"]"<<endl;
+            }
+
+        }
+        cout<<"the location_number:"<<location_number<<endl;
+
+
+        strstream ss_location;
+        string s_location;
+        ss_location<<location_number;
+        ss_location>>s_location;
+
+        //char* oldname=(s_location+mode_name_half).c_str();
+        char* newname="NewLR_Trained.xml";
+        cout<<"oldname="<<(s_location+mode_name_half).c_str()<<endl;
+        cout<<"newname"<<newname<<endl;
+        if (rename((s_location+mode_name_half).c_str(),newname)==0){
+            cout<<"rename ok! "<<endl;
+        }else{
+            cout<<"rename failed!"<<endl;
+        }
+
 
 
 }
